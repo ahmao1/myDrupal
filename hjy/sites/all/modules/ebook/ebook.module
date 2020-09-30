@@ -10,46 +10,43 @@ function ebook_node_info() {
 	$info['ebook'] = array(
 		'name' => t('EBook'),
 		'base' => 'node_content',
+		'description' => t('Use for ebook. Every user can upload and view a book.'),
 	);
 	return $info;
 }
-
 
 /**
  * Implementation of hook_menu()
  */
 function ebook_menu() {
-  $items['allEbooks'] = array(
-    'title' => t('All EBooks'),
-    'page callback' => 'allEbooks_callback',
-    'access callback' => TRUE,
+  $items['mylibrary'] = array(
+    'title' => t('My Library'),
+    'page callback' => 'mylibrary_page_callback',
+    'access arguments' => array('access content'),
     'type' => MENU_NORMAL_ITEM,
-    'menu_name' => 'main-menu',
-    'weight' => 5,
+    'menu_name' => 'user-menu',
+    'weight' => -5,
   );
 
   return $items;
 }
 
-/**
- * Page callback: displaying a page with php template
- *
- * @see createAPageWithTemplate_menu()
- */
-function allEbooks_callback(){
+function mylibrary_page_callback(){
   global $user;
   $build = array();
-  $uid = $user->uid;
-  $query = db_select('node', 'n');
+
+  $query = db_select('node', 'n')->extend('PagerDefault');
   $nids = $query
     ->fields('n', array('nid', 'created'))
     ->condition('type', 'ebook')
-    ->condition('status',1)
-    ->condition('uid',$uid,'=')
+    ->condition('uid', $user->uid)  //books uploaded by the current user
+    ->condition('status', 1)
     ->orderBy('created', 'DESC')
+    ->limit(variable_get('default_nodes_main', 10))
     ->addTag('node_access')
     ->execute()
     ->fetchCol();
+
   if (!empty($nids)) {
     $nodes = node_load_multiple($nids);
     $build += node_view_multiple($nodes);
@@ -59,19 +56,8 @@ function allEbooks_callback(){
     );
   }
   else {
-    drupal_set_message(t('No ebooks.'));
+    drupal_set_message(t('No book entries have been created.'));
   }
+
   return $build;
-/*
-  if (count($uids)!=0) {
-    $html = '<ul>';
-    foreach($uids as $item) {
-        $html .= '<li><a href="' . url("user/{$item->uid}")  . '"  class="username">' . $item->name . '</a></li>';
-    }
-    $html .= '</ul>';
-
-    return $html;
-
-    $build['content'] =  $html;
-*/
-  }
+}

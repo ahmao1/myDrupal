@@ -1571,3 +1571,10 @@ fieldset.mayo-layout-form div.form-type-radio {
 }
 /*@include MQ(standard-pc) {
 }   */
+
+
+.annotation-ebook-wrapper{
+  float:left;
+  display: inline;
+  width:20%;
+}
