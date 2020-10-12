@@ -95,7 +95,8 @@
     </div>
   <?php endif; ?>
 
-  <div class="content clearfix"<?php print $content_attributes; ?> style="display: inline; width:80%; float:left;">
+  <div class="content clearfix"<?php print $content_attributes; ?> 
+      style="display: inline; width:80%; float:left;">
     <?php
       // We hide the comments and links now so that we can render them later.
       hide($content['comments']);
