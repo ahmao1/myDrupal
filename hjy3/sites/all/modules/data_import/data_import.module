@@ -1,0 +1,189 @@
+<?php
+
+/**
+ * @file data_import.module.
+ */
+
+/**
+ * Implementation of hook_menu()
+ */
+function data_import_menu() {
+  $items['aNewPage'] = array(
+    'title' => t('Data Import Page'),
+    'access arguments' => array('access content'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('dataImport_form'),
+    'type' => MENU_NORMAL_ITEM,
+    'menu_name' => 'main-menu',
+    'weight' => 10,
+  );
+
+  return $items;
+}
+
+/**
+ * @file data_import.module.
+ */
+
+/**
+ * Implementation of the submission form for data import
+ */
+function dataImport_form($form, &$form_state) {
+    $form = array();
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#value' => 'Import Data'
+    );
+    return $form;
+}
+
+function getDirContent($path){
+  if(!is_dir($path)){
+    return false;
+  }
+  //readdir方法
+  /* $dir = opendir($path);
+  $arr = array();
+  while($content = readdir($dir)){
+    if($content != '.' && $content != '..'){
+      $arr[] = $content;
+    }
+  }
+  closedir($dir); */
+
+  //scandir方法
+  $arr = array();
+  $data = scandir($path);
+  foreach ($data as $value){
+    if($value != '.' && $value != '..'){
+      $arr[] = $value;
+    }
+  }
+  return $arr;
+}
+
+// @TODO 现在提交按钮后只实现了存储一本电子书和一个相关的注解
+// 需要修改此处代码实现所有爬取数据的存储
+/**
+ * Implementation of data import after submission
+ */
+function dataImport_form_submit($form, &$form_state) {
+  $list = getDirContent("public://data");
+  foreach($list as $filename)
+  {
+    $filetitle = explode(".", $filename)[0];
+    global $user;
+    $node = new stdClass();
+    $node->type = 'ebook';
+    $node->status = 1;
+    $node->uid = $user->uid;
+    $node->title = t($filetitle);
+    $node->promote = 1;
+    $node->sticky = 0;
+    $node->language = LANGUAGE_NONE;
+    $node->revision = NULL;
+    $node->comment = COMMENT_NODE_CLOSED;
+
+    // 假设爬取的数据就在Drupal文件系统目录下的data文件夹里
+    // public://data，即sites/default/files/data
+    $data_path = "public://data";
+    $cover_uri = "public://cover/cover.jpg";
+    // 将路径转化为本地文件路径
+    $cover_path = drupal_realpath($cover_uri);
+    // 判断图像是否存在
+    if(file_exists($cover_path)){
+      // 创建一个File对象
+      $cover_file = (object) array(
+        'uid' => $user->uid,
+        'uri' => $cover_uri,
+        'filemime' => file_get_mimetype($cover_uri),
+        'status' => 1,
+      );
+      // 存储文件
+      // 保存文件到相对于Drupal文件系统的根目录
+      $cover_file = file_copy($cover_file, "public://");
+      // 将file对象合并到节点上自定义的图像字段
+      $node->book_cover[LANGUAGE_NONE][0] = (array)$cover_file;
+    }
+
+    // 假设爬取的数据就在当前模块目录下的data文件夹里
+    $pdf_uri = $data_path . "/".$filename;
+    // 将路径转化为本地文件路径
+    $pdf_path = drupal_realpath($pdf_uri);
+    if(!file_exists($pdf_path)){
+      drupal_set_message(t($filename));
+      //表单重定向到书库页面
+      $form_state['redirect'] = 'all';
+      return;
+    }
+
+    // 创建一个File对象
+    $pdf_file = (object) array(
+      'uid' => $user->uid,
+      'uri' => $pdf_uri,
+      'filemime' => file_get_mimetype($pdf_uri),
+      'status' => 1,
+    );
+    // 存储文件
+    // 保存文件到相对于Drupal文件系统的根目录
+    $pdf_file = file_copy($pdf_file, "public://");
+    // 将file对象合并到节点上自定义的pdf文件字段
+    $node->book_file[LANGUAGE_NONE][0] = (array)$pdf_file;
+    $node->book_file[LANGUAGE_NONE][0]['display'] = 1;
+
+    $node = node_submit($node); // 提交前对节点进行预处理
+    node_save($node); // 调用这个函数后，可以返回新建的节点的id
+
+    // 创建node节点请参考annotation module
+    // 存储annotation内容
+    $annotationpath = "public://annotation/".$filetitle.".txt";
+
+    $file = fopen($annotationpath, "r");
+    $annotationcontent=array();
+    $i=0;
+    while(! feof($file))
+    {
+      $annotationcontent[$i]= fgets($file);
+      $str = explode("#", $annotationcontent[$i]); //注解文件的格式规定：'#'隔开键值对
+      if(count($str)<2)
+          break;
+      $annotationtitle = $str[0];
+      $annotationvalue = $str[1];
+
+      $nodeAnnotation = new stdClass();
+      $nodeAnnotation->type = 'annotation';
+      $nodeAnnotation->status = 1;
+      $nodeAnnotation->uid = $user->uid;
+      $nodeAnnotation->title = t($annotationtitle);
+      $nodeAnnotation->promote = 1;
+      $nodeAnnotation->sticky = 0;
+      $nodeAnnotation->language = LANGUAGE_NONE;
+      $nodeAnnotation->revision = NULL;
+      $nodeAnnotation->comment = COMMENT_NODE_CLOSED;
+
+      // 存储爬取的注解文本
+      // 请修改此处代码存储爬虫爬取的注解内容
+      $body = $annotationvalue;
+      $nodeAnnotation->body[$nodeAnnotation->language][0]['value'] = check_markup($body, 'filtered_html');
+      $nodeAnnotation->body[$nodeAnnotation->language][0]['format'] = 'filtered_html';
+
+      // 提交前对节点进行预处理，并存储Annotation节点
+      $nodeAnnotation = node_submit($nodeAnnotation);
+      node_save($nodeAnnotation);
+
+      $i++;
+
+      $page_id = 1;
+      $highlight_keywords = $annotationtitle;
+      db_merge('ebook_enrichments')
+      ->key(array('annotation_nid'=>$nodeAnnotation->nid))
+      ->fields(array(
+        'book_nid' => $node->nid,
+        'page_id' => $page_id,
+        'highlight_keywords' => $highlight_keywords,
+      ))
+      ->execute();
+    }
+  }
+  fclose($file);
+}

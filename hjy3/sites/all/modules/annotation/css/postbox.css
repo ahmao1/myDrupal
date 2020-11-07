@@ -1,0 +1,107 @@
+.postbox textarea{
+	display: block;
+	width: 100%;
+	overflow: auto;
+  	border: 1px solid #ddd;
+  	-webkit-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.055);
+  	-moz-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.055);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.055);
+}
+
+#postbox {
+	display: block;
+	margin-bottom: 15px;
+}
+
+#postbox textarea {
+	height: 120px;
+}
+
+.postbox .post-btn {
+	background-color: gray;
+	border: 1px solid;
+	border-radius: 4px;
+	color: white;
+	float: right;
+	height: 24px;
+	margin-top: 5px;
+}
+
+.postbox .post-btn:hover {
+	background-color: darkgray;
+}
+
+.postbox .toolbar {
+	height: 30px;
+}
+
+.postbox .toolbar a {
+	display: inline-block;
+	background-image: url(images/media_icons.png);
+	background-repeat: no-repeat;
+	width: 15px;
+	height: 14px;
+	margin-top: 15px;
+	margin-left:5px;
+	float: left;
+}
+
+.postbox .toolbar a:hover {
+	text-decoration: underline;
+	text-shadow: none;
+}
+.postbox .toolbar a.btn-photo {
+	background-position: 0 0;
+}
+.postbox .toolbar a.btn-photo:hover{
+	background-position: 0 -14px;
+}
+
+#postbox-dialog
+{
+	position: absolute;
+	z-index: 9999;
+	background: #f6f6f2;
+	width: 360px;
+	padding: 0px;
+	border: 1px solid; 
+	-webkit-border-radius: 4px;
+	-moz-border-radius: 4px;
+	border-radius: 4px;
+}
+
+.btn-close {
+	cursor: pointer;
+	position: absolute;
+	top: 2px;
+	right: 2px;
+	width: 14px;
+	height: 14px;
+	background: url(images/close.png) no-repeat;
+	display: block;
+}
+.btn-close:hover,
+.btn-close:focus{
+  background-color: rgba(0,0,0,.2)!important;
+}
+
+#postbox-dialog label {
+	margin-right: 5px;
+	font-size: 11px;
+	font-weight: bold;
+	color: #646464;
+}
+
+/******** Image Dialog *********/
+#image-dialog{
+	width: 360px;
+}
+
+#postbox-dialog .attached a {
+	color: white !important;
+}
+
+/******** Annotation Block *********/
+#block-annotation-enrichment-block {
+	display: none;
+}

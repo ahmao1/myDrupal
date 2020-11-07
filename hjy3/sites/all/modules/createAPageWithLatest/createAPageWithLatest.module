@@ -1,0 +1,56 @@
+<?php
+
+/**
+ * @file createAPageWithLatest.module.
+ */
+
+/**
+ * Implementation of hook_menu()
+ */
+function createAPageWithLatest_menu() {
+  $items['LatestPage'] = array(
+    'title' => t('The Latest Books'),
+    'page callback' => 'a_latest_page_callback',
+    'access callback' => TRUE,
+    'type' => MENU_NORMAL_ITEM,
+    'menu_name' => 'main-menu',
+    'weight' => 5,
+  );
+
+	return $items;
+}
+
+/**
+ * Page callback: displaying a page with php Latest
+ *  
+ * @see createAPageWithLatest_menu()
+ */
+function a_latest_page_callback(){
+  global $user;
+  $build = array();
+  //$uid=$user->uid;
+  $query = db_select('node', 'n');
+  $nids = $query
+    ->fields('n', array('nid', 'created'))
+    ->condition('type', 'ebook')
+    ->condition('status', 1)
+    ->orderBy('created', 'DESC')
+    ->addTag('node_access')
+    ->range(0,5)
+    ->execute()
+    ->fetchCol();
+
+  if (!empty($nids)) {
+    $nodes = node_load_multiple($nids);
+    $build += node_view_multiple($nodes);
+    $build['pager'] = array(
+      '#theme' => 'pager',
+      '#weight' => 6,
+    );
+  }
+  else {
+    drupal_set_message(t('No books'));
+  }
+
+  return $build;
+}
